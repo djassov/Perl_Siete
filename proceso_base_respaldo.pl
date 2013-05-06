@@ -78,9 +78,9 @@ $archivo_pm="pm.ini";
 $sia=open(PM,"<$archivo_pm");
 if($sia==0)
 {
-  print "¡ NO está el archivo de  información inicial !";
+  print "Â° NO estÂ· el archivo de  informaciÃ³n inicial !";
   print ERROR "\nmail \"ERROR Liquidaciones\" jlealvil\@SEM \<\<\_clave";
-  print ERROR "\nPROCESO DE VALIDACIÓN DE LIQUIDACIONES...";
+  print ERROR "\nPROCESO DE VALIDACIâ€N DE LIQUIDACIONES...";
   print ERROR "\nNo existe archivo de configuracion inicial.";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\n_clave";
@@ -95,20 +95,25 @@ close(PM);
 #--------+       Datos de conexion a la base de datos 
 #--------+       (contenidos en archivo de configuracion)
 #--------+       
-
+$v0="db=";
 $v1="conexion=";
 $v2="usuario=";
 $v3="clave=";
 foreach $l(@lineaa){
+  
+  if(index($l,$v0)>=0){$variableDB=trim(substr($l,length($v0))); }
   if(index($l,$v1)>=0){$variableDSN=trim(substr($l,length($v1))); }
   if(index($l,$v2)>=0){$usuario=trim(substr($l,length($v2))); }
   if(index($l,$v3)>=0){$password=trim(substr($l,length($v3))); }
 }
+
+$variableDB ="Oracle" if $variableDB eq "";
+
 if("$variableDSN" eq "" || $usuario eq "" || $password eq "")
 {
-  print "¡ No hay información válida en el archivo de información inicial !";
+  print "Â° No hay informaciÃ³n vÂ·lida en el archivo de informaciÃ³n inicial !";
   print ERROR "\nmail \"ERROR Liquidaciones\" jlealvil\@SEM \<\<\_clave";
-  print ERROR "\nPROCESO DE VALIDACIÓN DE LIQUIDACIONES...";
+  print ERROR "\nPROCESO DE VALIDACIâ€N DE LIQUIDACIONES...";
   print ERROR "\nNo hay informacion en el archivo de configuracion inicial.";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\n_clave";
@@ -121,12 +126,13 @@ if("$variableDSN" eq "" || $usuario eq "" || $password eq "")
 #--------+       Conexion a la base de datos 
 #--------+       
 
-$conexione = DBI->connect ("dbi:Oracle:$variableDSN","$usuario","$password");
+$conexione = DBI->connect ("dbi:$variableDB:$variableDSN","$usuario","$password");
+
 #                          or die "NO SE PUEDE CONECTAR CON LA BASE DE DATOS ";
 if(! $conexione)
 {
   print ERROR "\nmail \"ERROR Liquidaciones\" jlealvil\@SEM \<\<\_clave";
-  print ERROR "\nPROCESO DE VALIDACIÓN DE LIQUIDACIONES...";
+  print ERROR "\nPROCESO DE VALIDACIâ€N DE LIQUIDACIONES...";
   print ERROR "\nNO SE PUDO CONECTAR CON LA BASE DE DATOS...";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\n_clave";
@@ -152,9 +158,9 @@ while (@fila = $conexion->fetchrow_array)
 {
   $path_configura = trim($fila[5]);
   if($path_configura eq "") { 
-    print "Faltan parámetros";
+    print "Faltan parÂ·metros";
     print ERROR "\nmail \"ERROR Liquidaciones\" jlealvil\@SEM \<\<\_clave";
-    print ERROR "\nPROCESO DE VALIDACIÓN DE LIQUIDACIONES...";
+    print ERROR "\nPROCESO DE VALIDACIâ€N DE LIQUIDACIONES...";
     print ERROR "\nNo hay informacion en LA TABLA DE PARAMETROS.";
     print ERROR "\n$fecha_sistema *** $hora_sistema";
     print ERROR "\n_clave";
@@ -217,7 +223,7 @@ print "\nFecha: $fecha_sistema";
 chdir("$path_lock");
 if(-e "$archivo_lock")
 {
-  print "\nSe ha detectado a otro proceso en ejecución";
+  print "\nSe ha detectado a otro proceso en ejecuciÃ³n";
   print LOG "\n    Proceso abortado, otro proceso se estaba ejecutando.";
   print LOG "\n    Se encontro archivo candado.";
   print LOG "\n-----------------------------------------------------------";
@@ -230,7 +236,7 @@ if(-e "$archivo_lock")
   print ERROR "\nmail \"ERROR Liquidaciones\" jlealvil\@SEM \<\<\_clave";
   print ERROR "\nPROCESO QUE CONSOLIDA LAS LIQUIDACIONES...";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
-  print ERROR "\nERROR SE ENCONTRÓ EL ARCHIVO DE CANDADO.";
+  print ERROR "\nERROR SE ENCONTRâ€ EL ARCHIVO DE CANDADO.";
   print ERROR "\n_clave";
 
   close(ERROR);
@@ -337,12 +343,12 @@ while (@fila = $conexion2->fetchrow_array)
 
   foreach $a(@archivos){
     print LOG "\n      Procesando archivo: $a";
-    print "\nLectura de archivo válido +$a+ +++++++++++++++++++ $indice-$indice2 TIENDA: $tienda_a_procesar[$indice][1]";
+    print "\nLectura de archivo vÂ·lido +$a+ +++++++++++++++++++ $indice-$indice2 TIENDA: $tienda_a_procesar[$indice][1]";
     $fecha_corte=substr($a,0,2)."-".substr($a,2,2)."-".substr($a,4,4);
     $archivo_a_procesar[$indice2][1]=trim($a);
     $fecha_archivo=substr($archivo_a_procesar[$indice2][1],0,2)."-".substr($archivo_a_procesar[$indice2][1],2,2)."-".substr($archivo_a_procesar[$indice2][1],4,4);
 
-    print "\nAbre el archivo de liquidación... $indice-$indice2";
+    print "\nAbre el archivo de liquidaciÃ³n... $indice-$indice2";
     $car=open(CONTIENE,"<$path_liquida/$tienda_a_procesar[$indice][1]/$carpeta/$archivo_a_procesar[$indice2][1]");
     if($car==0){print "\n$tienda_a_procesar[$indice][1] - No se pudo abrir el archivo: $archivo_a_procesar[$indice2][1]...";$indice2++;next;}
     @contenido_archivo=<CONTIENE>; #CARGA EL CONTENIDO EN UN ARREGLO
@@ -368,7 +374,7 @@ while (@fila = $conexion2->fetchrow_array)
      if($TotalLineas eq 0)
      {
        print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-       print "\nSe detectó que la liquidacion no esta completa...";
+       print "\nSe detectÃ³ que la liquidacion no esta completa...";
        print ERROR "ERROR: El archivo de liquidacion esta vacio. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
        $liq_orig=$path_liquida."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
        $liq_err=$liq_orig."err";
@@ -382,7 +388,7 @@ while (@fila = $conexion2->fetchrow_array)
      if($TotalLineas < 8)
      {
        print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-       print "\nSe detectó que la liquidacion no esta completa...";
+       print "\nSe detectÃ³ que la liquidacion no esta completa...";
        print ERROR "ERROR: El archivo de liquidacion esta incompleto. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a $TotalLineas )\n      La liquidacion fue renombrada a .err\n\n";
        $liq_orig=$path_liquida."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
        $liq_err=$liq_orig."err";
@@ -401,13 +407,13 @@ while (@fila = $conexion2->fetchrow_array)
      if($tienda_a_procesar[$indice][1] ne $tienda_archivo)
      {
        print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-       print "\nSe detectó un error, no coinciden la tienda con el archivo de liquidación...";
-       print ERROR "ERROR: No coinciden la tienda (nombre de carpeta) con el archivo de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a Checar $tienda_archivo)\n      La liquidacion fue renombrada a .err\n\n";
+       print "\nSe detectÃ³ un error, no coinciden la tienda con el archivo de liquidaciÃ³n...";
+       print ERROR "ERROR: No coinciden la tienda (nombre de carpeta) con el archivo de liquidaciÃ³n. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a Checar $tienda_archivo)\n      La liquidacion fue renombrada a .err\n\n";
        $liq_orig=$path_liquida."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
        $liq_err=$liq_orig."err";
        rename("$liq_orig", "$liq_err");
        $Errores++;
-       print LOG "\n      ERROR: No coinciden la tienda (nombre de carpeta) con el archivo de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)";
+       print LOG "\n      ERROR: No coinciden la tienda (nombre de carpeta) con el archivo de liquidaciÃ³n. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)";
        $indice2++;
        next;
      }
@@ -419,13 +425,13 @@ while (@fila = $conexion2->fetchrow_array)
 
      if($fecha_archivo ne $fecha_liq_archivo)
      {
-       print "\nSe detectó un error, no coinciden la fecha del archivo con la de liquidación...";
-       print ERROR "ERROR: No coinciden la fecha del archivo con la de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
+       print "\nSe detectÃ³ un error, no coinciden la fecha del archivo con la de liquidaciÃ³n...";
+       print ERROR "ERROR: No coinciden la fecha del archivo con la de liquidaciÃ³n. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
        $liq_orig=$path_liquida."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
        $liq_err=$liq_orig."err";
        rename("$liq_orig", "$liq_err");
        $Errores++;
-       print LOG "\n      ERROR: No coinciden la fecha del archivo con la de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)";
+       print LOG "\n      ERROR: No coinciden la fecha del archivo con la de liquidaciÃ³n. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)";
        $indice2++;
        next;
      }
@@ -520,11 +526,11 @@ while (@fila = $conexion2->fetchrow_array)
 
 
 #--------+       
-#--------+       Aquí va la concatenación...
+#--------+       AquÃŒ va la concatenaciÃ³n...
 #--------+       
 
      $contiene="@contenido_archivo";
-     print "\nAbre el archivo al que se concatenará la liquidación... $indice-$indice2";
+     print "\nAbre el archivo al que se concatenarÂ· la liquidaciÃ³n... $indice-$indice2";
 
      open (CONCATENA, ">> $tienda_a_procesar[$indice][3]");
      $contiene=join('',@contenido_archivo);
@@ -533,7 +539,7 @@ while (@fila = $conexion2->fetchrow_array)
      print CONCATENA $contiene;
      close(CONCATENA);
 
-     print "\nCierra el archivo al que se concatenará la liquidación... $indice-$indice2";
+     print "\nCierra el archivo al que se concatenarÂ· la liquidaciÃ³n... $indice-$indice2";
 
 #--------+       
 #--------+       Respalda el archivo en la carpeta de procesados...
@@ -543,7 +549,7 @@ while (@fila = $conexion2->fetchrow_array)
      $abc=chdir("$path_liquida/$tienda_a_procesar[$indice][1]/$carpeta/$procesado");
      if($abc==0)
      {
-       print LOG "\n      No existe la carpeta de procesados, se creará para la tienda: $tienda_a_procesar[$indice][1] ...";
+       print LOG "\n      No existe la carpeta de procesados, se crearÂ· para la tienda: $tienda_a_procesar[$indice][1] ...";
        mkdir("$path_liquida/$tienda_a_procesar[$indice][1]/$carpeta/$procesado");
      }
      print "\nCopia archivo...";
