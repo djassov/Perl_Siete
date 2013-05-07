@@ -8,13 +8,13 @@ use File::Copy;
 #--------+       
 #--------+       Declaracion de Variables
 #--------+       
-
+$debug=0;
 $Errores=0;  
 $dir_proceso=`pwd`;
 $dir_proceso=~s/(\r|\n)*$//;
 
-$proceso_actual="Recepciones sin Pedido";
 $proceso_id = shift;
+$proceso_actual="Proceso ".$proceso_id;
 
 #--------+       
 #--------+       Calcula el dia de ayer (no se para que)
@@ -73,8 +73,27 @@ $nombrearchivoLOG=$proceso_id."-".$ano.$mes.$dia.$hora.$minuto.$segundo.".log";
 #--------+       Crea un archivo para guardar mensajes de error del proceso 
 #--------+       
 
-$archivoerror=$dir_proceso."/ERROR_". $proceso_id .".err";
+$archivoerror=$dir_proceso."/ERROR_Proceso_". $proceso_id .".err";
+$correo_error="gserna\@7-eleven.com.mx";
+
 open(ERROR,"> $archivoerror");
+
+#--------+       
+#--------+       Valido los parametros de entrada 
+#--------+
+
+if(!$proceso_id)
+{
+  print "° Dede proporcionar el ID del proceso a correr !";
+  print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
+  print ERROR "\nPROCESO DE VALIDACIÓN DE $proceso_actual...";
+  print ERROR "\nNo se proporcionaron los parametros adecuados.";
+  print ERROR "\n$fecha_sistema *** $hora_sistema";
+  print ERROR "\n_clave";
+  close(ERROR);
+  #system ("bash $archivoerror");
+  exit();
+}
 
 
 #--------+       
@@ -85,14 +104,14 @@ $archivo_pm="pm.ini";
 $sia=open(PM,"<$archivo_pm");
 if($sia==0)
 {
-  print "° NO está el archivo de  información inicial !";
-  print ERROR "\nmail \"ERROR $proceso_actual\" jlealvil\@SEM \<\<\_clave";
+  $debug && print "° NO está el archivo de  información inicial !";
+  print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
   print ERROR "\nPROCESO DE VALIDACIÓN DE $proceso_actual...";
   print ERROR "\nNo existe archivo de configuracion inicial.";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\n_clave";
   close(ERROR);
-  system ("bash $archivoerror");
+  #system ("bash $archivoerror");
   exit();
 }
 @lineaa=<PM>;
@@ -118,14 +137,14 @@ $variableDB ="Oracle" if $variableDB eq "";
 
 if("$variableDSN" eq "" || $usuario eq "" || $password eq "")
 {
-  print "° No hay información válida en el archivo de información inicial !";
-  print ERROR "\nmail \"ERROR $proceso_actual\" jlealvil\@SEM \<\<\_clave";
+  $debug && print "° No hay información válida en el archivo de información inicial !";
+  print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
   print ERROR "\nPROCESO DE VALIDACIÓN DE $proceso_actual...";
   print ERROR "\nNo hay informacion en el archivo de configuracion inicial.";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\n_clave";
   close(ERROR);
-  system ("bash $archivoerror");
+  #system ("bash $archivoerror");
   exit();
 }
 
@@ -138,7 +157,7 @@ $conexione = DBI->connect ("dbi:$variableDB:$variableDSN","$usuario","$password"
 #                          or die "NO SE PUEDE CONECTAR CON LA BASE DE DATOS ";
 if(! $conexione)
 {
-  print ERROR "\nmail \"ERROR $proceso_actual\" jlealvil\@SEM \<\<\_clave";
+  print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
   print ERROR "\nPROCESO DE VALIDACIÓN DE $proceso_actual...";
   print ERROR "\nNO SE PUDO CONECTAR CON LA BASE DE DATOS...";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
@@ -151,14 +170,14 @@ if(! $conexione)
   print ERROR "\n_clave";
 
   close(ERROR);
-  system ("bash $archivoerror");
+  #system ("bash $archivoerror");
   exit();
 }
 
 #--------+       
 #--------+       Query a tabla de parametros
 #--------+       
-print "SELECT * FROM apps.procesos where id=".$proceso_id;
+$debug && print "SELECT * FROM apps.procesos where id=".$proceso_id;
 
 $conexion=$conexione->prepare("SELECT * FROM apps.procesos where id=".$proceso_id);
 $conexion->execute;
@@ -168,23 +187,33 @@ if ($fila = $conexion->fetchrow_hashref())
   $proceso_prefijo=trim($fila->{'prefijo'});
   $proceso_path=trim($fila->{'path_dir'});
   $proceso_filename=trim($fila->{'filename'});
+  
   $proceso_header_tienda=trim($fila->{'header_tienda'});
+  $proceso_longitud_hr=trim($fila->{'longitud_hr'});
+  
   $proceso_header_recepcion=trim($fila->{'header_recepcion'});
+  $proceso_longitud_hr=trim($fila->{'longitud_hr'});
+  
   $proceso_articulo=trim($fila->{'articulo'});
+  $proceso_longitud_articulo=trim($fila->{'longitud_articulo'});
+  
+  $proceso_lineasmin=trim($fila->{'lineas_minimas'});
+  $proceso_softerror=trim($fila->{'softerror'});
+  
   $nombrearchivoLOG=$proceso_prefijo.$nombrearchivoLOG;
   $proceso_actual=$proceso_nombre;
   
 }
 else
 {
-    print "Faltan parámetros";
-    print ERROR "\nmail \"ERROR $proceso_actual\" jlealvil\@SEM \<\<\_clave";
+    $debug && print "Faltan parámetros";
+    print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
     print ERROR "\nPROCESO DE VALIDACIÓN DE $proceso_actual...";
     print ERROR "\nNo hay informacion en LA TABLA DE PARAMETROS.";
     print ERROR "\n$fecha_sistema *** $hora_sistema";
     print ERROR "\n_clave";
     close(ERROR);
-    system ("bash $archivoerror");
+    #system ("bash $archivoerror");
     exit();
 }
 
@@ -207,13 +236,13 @@ print LOG "\nCONSOLIDACION DE $proceso_actual";
 print LOG "\n$fecha_sistema  $hora_sistema";
 print LOG "\n";
 
-print "\n1*$path_lock*";
-print "\n2*$archivo_lock*";
-print "\n3*$proceso_path*";
-print "\n ENCONTRADO";
-print "\n4*$DIRECTORIO_BITACORAS*";
-print "\nFecha: $fecha_sistema";
-print "\n";
+$debug && print "\n1*$path_lock*";
+$debug && print "\n2*$archivo_lock*";
+$debug && print "\n3*$proceso_path*";
+$debug && print "\n ENCONTRADO";
+$debug && print "\n4*$DIRECTORIO_BITACORAS*";
+$debug && print "\nFecha: $fecha_sistema";
+$debug && print "\n";
 
 
 #--------+       
@@ -223,24 +252,23 @@ print "\n";
 chdir("$path_lock");
 if(-e "$archivo_lock")
 {
-  print "\nSe ha detectado a otro proceso en ejecución";
+  $debug && print "\nSe ha detectado a otro proceso en ejecución";
   print LOG "\n    Proceso abortado, otro proceso se estaba ejecutando.";
   print LOG "\n    Se encontro archivo candado.";
   print LOG "\n-----------------------------------------------------------";
   print LOG "\n  $path_lock                      $archivo_lock";
   print LOG "\n-----------------------------------------------------------";
-  print "\nERROR candado encontrado $path_lock $archivo_lock";
+  $debug && print "\nERROR candado encontrado $path_lock $archivo_lock";
   close(LOG);
-  $archivoerror="ERROR_liquidacion.err";
-  open(ERROR,"> $DIRECTORIO_BITACORAS/$archivoerror");
-  print ERROR "\nmail \"ERROR $proceso_actual\" jlealvil\@SEM \<\<\_clave";
+  
+  print ERROR "\nmail \"ERROR $proceso_actual\" $correo_error \<\<\_clave";
   print ERROR "\nPROCESO QUE CONSOLIDA LAS $proceso_actual...";
   print ERROR "\n$fecha_sistema *** $hora_sistema";
   print ERROR "\nERROR SE ENCONTR” EL ARCHIVO DE CANDADO.";
   print ERROR "\n_clave";
 
   close(ERROR);
-  system ("bash $DIRECTORIO_BITACORAS/$archivoerror");
+  #system ("bash $archivoerror");
   exit();
 }
 else
@@ -261,22 +289,60 @@ $abc=chdir("$proceso_path");
   
    #mi variable de salida
         %salida=();
+        %salida_err=();
+        $salir_archivo=0;
         
    @archivos=(<*.*>);
    
    foreach $a(@archivos){
     
-    print $a."\n";
+    if ($salir_archivo) {
+      $salir_archivo=0;
+      next;
+    }
+    
+    $debug && print $a."\n";
     
     if ($a=~ /$proceso_filename/) {
-      print "coincide\n";
-      print LOG "\n\n    Procesando Archivo: $a ...";
+      print LOG "\n\n    Procesando Archivo: $a ...\n";
+      $debug && print "\n    Procesando Archivo: $a ...\n";
       
       if (open(CONTENIDO,"<$a")) {
         @lineas=<CONTENIDO>;
         close CONTENIDO;
         
-       
+       #Verifico el tamaño del archivo (contenido >0)
+        $TotalLineas=$#lineas+1;
+    
+         if($TotalLineas eq 0)
+         {
+          print LOG "ERROR: El archivo $a esta vacio. se renombra a $a.err\n\n";
+          $debug && $debug && print "ERROR: El archivo $a esta vacio. se renombra a $a.err\n\n";
+          
+          print ERROR "ERROR: El archivo $a esta vacio. se renombra a $a.err\n\n";
+           $a_err=$a."err";
+           rename("$a", "$a_err");
+           $Errores++;
+           
+           next;
+         }
+          if ($proceso_lineasmin >0) {
+          
+            if($TotalLineas < $proceso_lineasmin)
+            {
+              print LOG "ERROR: El archivo $a no cumple con la cantidad mínima de líneas. Se renombra a  $a.err_lm\n\n";
+              $debug && $debug && print "ERROR: El archivo $a no cumple con la cantidad mínima de líneas. Se renombra a  $a.err_lm\n\n";
+              
+              print ERROR "ERROR: El archivo $a no cumple con la cantidad mínima de líneas. Se renombra a  $a.err_lm\n\n";
+               $a_err=$a."err_lm";
+               rename("$a", "$a_err");
+               $Errores++;
+               
+               next;
+            }  
+          }
+
+       #----------------------------------------------
         
         # Verifico cada linea para saber que tipo es
         # Verifico tambien el tamaño de la linea
@@ -284,64 +350,169 @@ $abc=chdir("$proceso_path");
         
         foreach $renglon(@lineas){
           $renglon=~s/(\r|\n)*$//;
-         print $renglon."\n";
+        
+          
+          
+         $debug && print $renglon."\n";
          
           if($renglon =~/$proceso_header_tienda/){
+            
+            $HT_error=0;
+            #Valido la longitud del registro, si está definida
+            if ($proceso_longitud_ht >0) {
+            
+              #Si son de diferente longitud, lo marco como error
+              if ( length($renglon) != $proceso_longitud_ht) {
+            
+                #Verifico el tipo de error a generar, si termina el archivo o solo las lineas mal formadas.
+                if ($proceso_softerror) {
+                  #Guardo esta linea y continuo con el proceso
+                  #Coloco una bandera para decir que tengo un error en HT
+                  $HT_error = 1;
+                  $ht=$renglon;
+                  $salida_err{$ht}=();
+                  $salida_err{"err_".$ht}=1;
+                  next;
+                  
+                }else{
+                  #termino con el archivo y lo marco con error.
+                  $HT_error=0; #lo pongo en 0 para que el proximo archivo no marque error
+                  
+                }
+                
+              }
+              
+            }
+            
             if(exists $salida{$renglon}){
-              # Error, ya existe este header
+              # Ya existe este header
             }
             else{
-              print "Es header tienda\n";
+              $debug && print "Es header tienda\n";
               $ht=$renglon;
               $salida{$ht}=();
+              $salida_err{$ht}=();
             }
+            
           }elsif($renglon =~/$proceso_header_recepcion/){
+            
+            $HR_error=0;
+            #Valido la longitud del registro, si está definida
+            if ($proceso_longitud_hr >0) {
+            
+              #Si son de diferente longitud, lo marco como error
+              if ( (length($renglon) != $proceso_longitud_hr) || $HT_error) {
+            
+                #Verifico el tipo de error a generar, si termina el archivo o solo las lineas mal formadas.
+                if ($proceso_softerror) {
+                  #Guardo esta linea y continuo con el proceso
+                  #Coloco una bandera para decir que tengo un error en HR
+                  $HR_error = 1;
+                  $hr=$renglon;
+                  $salida_err{$ht}{$hr}=0;
+                  $salida_err{$ht}{"err_".$hr}=1 if ( (length($renglon) != $proceso_longitud_hr));
+                  next;
+                  
+                }else{
+                  #termino con el archivo y lo marco con error.
+                  $HR_error=0; #lo pongo en 0 para que el proximo archivo no marque error
+                  
+                }
+                
+              }
+              
+            }
+            
             if(exists $salida{$ht}{$renglon}){
               # Error, ya existe este header Recepcion
             }
             else{
-              print "Es header Recepcion\n";
+              $debug && print "Es header Recepcion\n";
               $hr=$renglon;
               $salida{$ht}{$hr}=0;
+              $salida_err{$ht}{$hr}=0;
             }
+            
           }elsif($renglon =~/$proceso_articulo/){
-            print "Es articulo \n";
+            
+            $ART_error=0;
+            #Valido la longitud del registro, si está definida
+            if ($proceso_longitud_articulo >0) {
+            
+              #Si son de diferente longitud, lo marco como error
+              if ( (length($renglon) != $proceso_longitud_articulo)  || $HT_error || $HR_error) {
+            
+                #Verifico el tipo de error a generar, si termina el archivo o solo las lineas mal formadas.
+                if ($proceso_softerror) {
+                  #Guardo esta linea y continuo con el proceso
+                  #Coloco una bandera para decir que tengo un error en Articulo
+                  $ART_error = 1;
+                  $salida_err{$ht}{$hr}++ if (length($renglon) != $proceso_longitud_articulo);
+                  print "\n$ht | $hr | $renglon\n";
+                  print "$HT_error | $HR_error | $ART_error";
+                  next;
+                  
+                }else{
+                  #termino con el archivo y lo marco con error.
+                  $ART_error=0; #lo pongo en 0 para que el proximo archivo no marque error
+                  
+                }
+                
+              }
+              
+            }
+            
+            $debug && print "Es articulo \n";
               $salida{$ht}{$hr}++;
             }
           
             
         } #Fin Foreach de renglones
       }else{
-        print "No se pudo abrir el archivo $a n";
+        $debug && print "No se pudo abrir el archivo $a n";
       } #Fin de apertura de archivo
       
       
       
       
       
-    }
     
     
-   print LOG "\nResultados archivo $a  \n";
-   $proceso_plaza='\.(\d\d\d)';
-   if($a=~/$proceso_plaza/){
-    $plaza=$1;
-   }
-   foreach $s_tienda(keys %salida){
-    
-    foreach $s_recepcion(keys %{$salida{$s_tienda}}){
-      print LOG "$s_tienda | ";
-      print LOG "$s_recepcion | ";
-      print LOG $salida{$s_tienda}{$s_recepcion}."\n";
-      $cantidad=$salida{$s_tienda}{$s_recepcion};
-      $query="INSERT INTO apps.procesados values(null,$proceso_id,'$proceso_nombre','$plaza','$a','$date_proceso','$s_tienda','$s_recepcion','$cantidad')";
-      $conexion4=$conexione->prepare($query);
-      $conexion4->execute;
-    }
-    
-   }
+        
+       print LOG "\nResultados archivo $a  \n";
+       $proceso_plaza='\.(\d\d\d)';
+       if($a=~/$proceso_plaza/){
+        $plaza=$1;
+       }
+       foreach $s_tienda(keys %salida){
+        
+        foreach $s_recepcion(keys %{$salida{$s_tienda}}){
+          print LOG "$s_tienda | ";
+          print LOG "$s_recepcion | ";
+          print LOG $salida{$s_tienda}{$s_recepcion}."\n";
+          $cantidad=$salida{$s_tienda}{$s_recepcion};
+          #manejamos los errores
+          $err_art=0;
+          $err_art=$salida_err{$s_tienda}{$s_recepcion} if (exists $salida_err{$s_tienda}{$s_recepcion});
+          
+          $err_ht=0;
+          $err_ht=$salida_err{"err_".$s_tienda} if (exists $salida_err{"err_".$s_tienda});
+          
+          $err_hr=0;
+          $err_hr=$salida_err{$s_tienda}{"err_".$s_recepcion} if (exists $salida_err{$s_tienda}{"err_".$s_recepcion});
+          
+          
+          $query="INSERT INTO apps.procesados values(null,$proceso_id,'$proceso_nombre','$plaza','$a','$date_proceso','$s_tienda','$s_recepcion',$cantidad,$err_ht,$err_hr,$err_art)";
+          $conexion4=$conexione->prepare($query);
+          $conexion4->execute;
+        }
+        
+       }
    
-    %salida=();
+      %salida=();
+      %salida_err=();
+    
+    } #Fin de if de nombre
     
    } #Fin de listado de archivos
    
@@ -402,7 +573,7 @@ $abc=chdir("$proceso_path");
 #
 #while (@fila = $conexion2->fetchrow_array)
 #{
-#  print "Inicio ciclo $indice-$indice2";
+#  $debug && print "Inicio ciclo $indice-$indice2";
 #
 ##--------+        
 ##--------+       Modificado el 23 Ene 2008
@@ -456,14 +627,14 @@ $abc=chdir("$proceso_path");
 #
 #  foreach $a(@archivos){
 #    print LOG "\n      Procesando archivo: $a";
-#    print "\nLectura de archivo válido +$a+ +++++++++++++++++++ $indice-$indice2 TIENDA: $tienda_a_procesar[$indice][1]";
+#    $debug && print "\nLectura de archivo válido +$a+ +++++++++++++++++++ $indice-$indice2 TIENDA: $tienda_a_procesar[$indice][1]";
 #    $fecha_corte=substr($a,0,2)."-".substr($a,2,2)."-".substr($a,4,4);
 #    $archivo_a_procesar[$indice2][1]=trim($a);
 #    $fecha_archivo=substr($archivo_a_procesar[$indice2][1],0,2)."-".substr($archivo_a_procesar[$indice2][1],2,2)."-".substr($archivo_a_procesar[$indice2][1],4,4);
 #
-#    print "\nAbre el archivo de liquidación... $indice-$indice2";
+#    $debug && print "\nAbre el archivo de liquidación... $indice-$indice2";
 #    $car=open(CONTIENE,"<$proceso_path/$tienda_a_procesar[$indice][1]/$carpeta/$archivo_a_procesar[$indice2][1]");
-#    if($car==0){print "\n$tienda_a_procesar[$indice][1] - No se pudo abrir el archivo: $archivo_a_procesar[$indice2][1]...";$indice2++;next;}
+#    if($car==0){$debug && print "\n$tienda_a_procesar[$indice][1] - No se pudo abrir el archivo: $archivo_a_procesar[$indice2][1]...";$indice2++;next;}
 #    @contenido_archivo=<CONTIENE>; #CARGA EL CONTENIDO EN UN ARREGLO
 #    close(CONTIENE);
 #
@@ -486,8 +657,8 @@ $abc=chdir("$proceso_path");
 #
 #     if($TotalLineas eq 0)
 #     {
-#       print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-#       print "\nSe detectó que la liquidacion no esta completa...";
+#       $debug && print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
+#       $debug && print "\nSe detectó que la liquidacion no esta completa...";
 #       print ERROR "ERROR: El archivo de liquidacion esta vacio. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -500,8 +671,8 @@ $abc=chdir("$proceso_path");
 #
 #     if($TotalLineas < 8)
 #     {
-#       print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-#       print "\nSe detectó que la liquidacion no esta completa...";
+#       $debug && print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
+#       $debug && print "\nSe detectó que la liquidacion no esta completa...";
 #       print ERROR "ERROR: El archivo de liquidacion esta incompleto. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a $TotalLineas )\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -519,8 +690,8 @@ $abc=chdir("$proceso_path");
 #
 #     if($tienda_a_procesar[$indice][1] ne $tienda_archivo)
 #     {
-#       print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
-#       print "\nSe detectó un error, no coinciden la tienda con el archivo de liquidación...";
+#       $debug && print "*$tienda_a_procesar[$indice][1]*$tienda_archivo*";
+#       $debug && print "\nSe detectó un error, no coinciden la tienda con el archivo de liquidación...";
 #       print ERROR "ERROR: No coinciden la tienda (nombre de carpeta) con el archivo de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a Checar $tienda_archivo)\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -538,7 +709,7 @@ $abc=chdir("$proceso_path");
 #
 #     if($fecha_archivo ne $fecha_liq_archivo)
 #     {
-#       print "\nSe detectó un error, no coinciden la fecha del archivo con la de liquidación...";
+#       $debug && print "\nSe detectó un error, no coinciden la fecha del archivo con la de liquidación...";
 #       print ERROR "ERROR: No coinciden la fecha del archivo con la de liquidación. (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -558,7 +729,7 @@ $abc=chdir("$proceso_path");
 #
 #     if($Fecha_Liquidacion ge $FechaProceso)
 #     {
-#       print "\nERROR: La fecha de la liquidacion es igual o posterior al dia de hoy.";
+#       $debug && print "\nERROR: La fecha de la liquidacion es igual o posterior al dia de hoy.";
 #       print ERROR "\nERROR: La fecha de la liquidacion es igual o posterior al dia de hoy. \n La liquidacion es renombrada a .err (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -579,7 +750,7 @@ $abc=chdir("$proceso_path");
 #     $EstaDuplicada="No";
 #     foreach $EncLiquidacion (@EncLiqPendientes){
 #       if(index($EncLiquidacion,$contenido_archivo[0])>=0){
-#         print "\nERROR: La liquidacion fue trasmitida dos veces en un periodo muy corto de tiempo, la segunda es liquidacion es ignorada.";
+#         $debug && print "\nERROR: La liquidacion fue trasmitida dos veces en un periodo muy corto de tiempo, la segunda es liquidacion es ignorada.";
 #         print ERROR "\nERROR: La liquidacion fue trasmitida dos veces en un periodo muy corto de tiempo, la segunda es liquidacion es ignorada. \n La liquidacion es renombrada a .err (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
 #         $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #         $liq_err=$liq_orig."err";
@@ -613,14 +784,14 @@ $abc=chdir("$proceso_path");
 #             if($Signo eq "+") {
 #               $ConError="Si";
 #               $Largo=length($Renglon);
-#               print "$Largo \n";
+#               $debug && print "$Largo \n";
 #             }
 #           }
 #         }
 #       }
 #     }
 #     if($ConError eq "Si"){ 
-#       print "\nERROR: La liquidacion tiene al menos un registro incompleto.";
+#       $debug && print "\nERROR: La liquidacion tiene al menos un registro incompleto.";
 #       print ERROR "\nERROR: La liquidacion tiene al menos un registro incompleto. \n La liquidacion es renombrada a .err (Tienda $tienda_a_procesar[$indice][1] Archivo: $a)\n      La liquidacion fue renombrada a .err\n\n";
 #       $liq_orig=$proceso_path."/".$tienda_a_procesar[$indice][1]."/".$carpeta."/".$archivo_a_procesar[$indice2][1];
 #       $liq_err=$liq_orig."err";
@@ -643,7 +814,7 @@ $abc=chdir("$proceso_path");
 ##--------+       
 #
 #     $contiene="@contenido_archivo";
-#     print "\nAbre el archivo al que se concatenará la liquidación... $indice-$indice2";
+#     $debug && print "\nAbre el archivo al que se concatenará la liquidación... $indice-$indice2";
 #
 #     open (CONCATENA, ">> $tienda_a_procesar[$indice][3]");
 #     $contiene=join('',@contenido_archivo);
@@ -652,7 +823,7 @@ $abc=chdir("$proceso_path");
 #     print CONCATENA $contiene;
 #     close(CONCATENA);
 #
-#     print "\nCierra el archivo al que se concatenará la liquidación... $indice-$indice2";
+#     $debug && print "\nCierra el archivo al que se concatenará la liquidación... $indice-$indice2";
 #
 ##--------+       
 ##--------+       Respalda el archivo en la carpeta de procesados...
@@ -665,7 +836,7 @@ $abc=chdir("$proceso_path");
 #       print LOG "\n      No existe la carpeta de procesados, se creará para la tienda: $tienda_a_procesar[$indice][1] ...";
 #       mkdir("$proceso_path/$tienda_a_procesar[$indice][1]/$carpeta/$procesado");
 #     }
-#     print "\nCopia archivo...";
+#     $debug && print "\nCopia archivo...";
 #     copy ("$proceso_path/$tienda_a_procesar[$indice][1]/$carpeta/$archivo_a_procesar[$indice2][1]","$proceso_path/$tienda_a_procesar[$indice][1]/$carpeta/$procesado/");
 #     unlink("$proceso_path/$tienda_a_procesar[$indice][1]/$carpeta/$archivo_a_procesar[$indice2][1]");
 #
@@ -673,7 +844,7 @@ $abc=chdir("$proceso_path");
 ##--------+       Borra registro en tabla de liquidaciones pendientes...
 ##--------+       
 #
-#     print "\nBorrando registro... $indice-$indice2";
+#     $debug && print "\nBorrando registro... $indice-$indice2";
 #
 #     $conexion3=$conexione->prepare("DELETE FROM apps.vigencia_liquida WHERE UPPER(liq_tienda)='".$tienda_a_procesar[$indice][1]."' AND liq_fecha='".$fecha_corte."'");
 #     $conexion3->execute;
@@ -685,14 +856,14 @@ $abc=chdir("$proceso_path");
 ##--------+       Actualiza tabla de historial...
 ##--------+       
 #
-#     print "\nInsertando registro en historial... $indice-$indice2";
+#     $debug && print "\nInsertando registro en historial... $indice-$indice2";
 #     $conexion4=$conexione->prepare("INSERT INTO apps.historial_liquida ( hl_tienda, hl_fecha, hl_status, hl_justifica, hl_fecha_carga ) VALUES('".$tienda_a_procesar[$indice][1]."','".$fecha_corte."','".$status."','".$justifica."','".$fecha_sistema."')");
 #     $conexion4->execute;
 #     $indice2++;
-#     print "\n********************************************************" ;
+#     $debug && print "\n********************************************************" ;
 #  } #--------+       Fin del ciclo de archivos
 #  if($indice2==0){
-#    print "\nNo se encontraron registros o archivos en esta carpeta: $tienda_a_procesar[$indice][1]";
+#    $debug && print "\nNo se encontraron registros o archivos en esta carpeta: $tienda_a_procesar[$indice][1]";
 #    print LOG "\n    No se encontraron registros o archivos en esta carpeta: $tienda_a_procesar[$indice][1]";
 #  }
 #  $indice++;
@@ -722,7 +893,7 @@ $hora_sistema="$hora:$minuto:$segundo";
 
 print LOG "\n\nHora de fin de proceso  $hora_sistema...";
 print LOG "\n-----------------------------------------------------------";
-print "\nFIN DE PROCESO...";
+$debug && print "\nFIN DE PROCESO...";
 
 #--------+       
 #--------+       Se cierran archivos Log, de errores y de encabezados de liquidaciones leidas...
