@@ -1,0 +1,8 @@
+db=oracle
+conexion=DVAP01
+usuario=admproc
+clave=admproc01
+tabla_procesos=ADMPROC.PROCESOS
+tabla_procesados=ADMPROC.PROCESADOS
+tabla_error=ADMPROC.PROCESADOS_ERROR
+tabla_plazas=ADMPROC.PLAZAS
