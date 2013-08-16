@@ -159,7 +159,17 @@ if("$variableDSN" eq "" || $usuario eq "" || $password eq "" || $tabla_procesos 
 
 #--------+       
 #--------+       Conexion a la base de datos 
-#--------+       
+#--------+
+
+#Seteo las variables de oracle:
+my $ORACLE_HOME = 'C:\APL\oracle\ora10g';
+my $ORACLE_SID="DAVP01";
+
+$ENV{ORACLE_HOME}=$ORACLE_HOME;
+$ENV{ORACLE_SID}=$ORACLE_SID;
+$ENV{PATH}="$ORACLE_HOME/bin";
+
+
 
 $conexione = DBI->connect ("dbi:$variableDB:$variableDSN","$usuario","$password");
 
